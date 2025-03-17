@@ -15,6 +15,8 @@ import glob
 import asyncio
 import threading
 
+import binascii
+
 import tkinter as tk
 from tkinter import ttk
 
@@ -680,7 +682,9 @@ class ChatGUI:
         self.create_settings_section(parent, "Общие настройки", common_config)
 
     def validate_number(self, new_value):
-        return 0 < len(new_value) <= 30  # Пример простой валидации
+        if not new_value.isdigit():  # Проверяем, что это число
+            return False
+        return 0 < int(new_value) <= 30  # Проверяем, что в пределах диапазона
 
     def pack_unpack(self, var, frame):
         """
@@ -703,14 +707,27 @@ class ChatGUI:
     def save_api_settings(self):
         """Собирает данные из полей ввода и сохраняет только непустые значения, не перезаписывая существующие."""
         try:
+            settings = {}  # По умолчанию пустые настройки
             # Загружаем текущие настройки, если файл существует
             if os.path.exists(self.config_path):
-                with open(self.config_path, "rb") as f:
-                    encoded = f.read()
-                decoded = base64.b64decode(encoded)
-                settings = json.loads(decoded.decode("utf-8"))
-            else:
-                settings = {}
+                try:
+                    with open(self.config_path, "rb") as f:
+                        encoded = f.read()
+                    try:
+                        decoded = base64.b64decode(encoded)
+                    except binascii.Error:
+                        print("Ошибка: Файл настроек поврежден (невалидный Base64).")
+                        decoded = "{}".encode("utf-8")  # Пустой JSON в виде строки
+
+                    try:
+                        settings = json.loads(decoded.decode("utf-8"))
+                    except json.JSONDecodeError:
+                        print("Ошибка: Файл настроек содержит некорректный JSON.")
+                        settings = {}
+
+                except (OSError, IOError) as e:
+                        decoded = base64.b64decode(encoded)
+                        settings = json.loads(decoded.decode("utf-8"))
 
             # Обновляем настройки новыми значениями, если они не пустые
             if api_key := self.api_key_entry.get().strip():
