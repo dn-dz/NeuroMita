@@ -176,7 +176,8 @@ class TelegramBotHandler:
 
         await asyncio.sleep(0.2)
         while attempts <= attempts_max:  # Попытки получения ответа
-
+            exists = await self.is_reply_message_received(requestChatID, requestID)
+            print("Сообщение найдено!" if exists else "Сообщение не найдено.")
             async for message in self.client.iter_messages(self.tg_bot, limit=1):
                 if message.media and isinstance(message.media, MessageMediaDocument):
                     doc = message.media.document
@@ -323,3 +324,10 @@ class TelegramBotHandler:
         except Exception as e:
             self.gui.silero_connected.set(False)
             print(f"Ошибка авторизации: {e}")
+        
+        async def is_reply_message_received(self, chat_id, reply_id):
+            try:
+                message = await self.client.get_messages(chat_id, ids=reply_id)
+                return message is not None  # True, если сообщение найдено
+            except:
+                return False  # False, если сообщение не найдено или произошла ошибка
