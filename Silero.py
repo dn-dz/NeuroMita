@@ -206,6 +206,7 @@ class TelegramBotHandler:
         # Обработка полученного сообщения
         if response.media and isinstance(response.media, MessageMediaDocument):
             if response and response.media:
+                print(f"DEBUG. Ответ от бота: {response.text}")
                 file_path = await self.client.download_media(response.media)
 
                 print(f"Файл загружен: {file_path}")
