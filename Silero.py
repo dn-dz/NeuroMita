@@ -328,6 +328,6 @@ class TelegramBotHandler:
         async def is_reply_message_received(self, chat_id, reply_id):
             try:
                 message = await self.client.get_messages(chat_id, ids=reply_id)
-                return message is not None  # True, если сообщение найдено
+                return message
             except:
                 return False  # False, если сообщение не найдено или произошла ошибка
