@@ -325,9 +325,135 @@ class TelegramBotHandler:
             self.gui.silero_connected.set(False)
             print(f"Ошибка авторизации: {e}")
         
-        async def is_reply_message_received(self, chat_id, reply_id):
+    async def start(self):
+        print("Запуск коннектора ТГ!")
+        try:
+            await self.client.connect()
+
+            # Проверяем, авторизован ли уже клиент
+            if not await self.client.is_user_authorized():
+                # Создаем окно для ввода кода подтверждения
+                code_window = tk.Toplevel()
+                code_window.title("Подтверждение Telegram")
+                code_window.geometry("300x150")
+                code_window.resizable(False, False)
+
+                frame = tk.Frame(code_window)
+                frame.place(relx=0.5, rely=0.5, anchor="center")
+
+                code_var = tk.StringVar()
+
+                code_entry = tk.Entry(
+                    frame, textvariable=code_var, width=20, justify="center"
+                )
+                code_entry.pack(pady=10)
+                code_entry.focus()  # Устанавливаем фокус на поле ввода
+
+                code_future = asyncio.Future()
+
+                def submit_code():
+                    if code_var.get().strip():  # Проверяем, что код не пустой
+                        code_future.set_result(code_var.get().strip())
+                        code_window.destroy()
+                    else:
+                        tk.messagebox.showerror("Ошибка", "Введите код подтверждения")
+
+                def on_enter(event):
+                    submit_code()
+
+                code_entry.bind("<Return>", on_enter)  # Добавляем обработку Enter
+
+                submit_button = tk.Button(
+                    frame,
+                    text="Подтвердить",
+                    command=submit_code,
+                    width=15,
+                    relief="flat",
+                )
+                submit_button.pack(pady=15)
+
+                # Ждем код подтверждения
+                try:
+                    await self.client.sign_in(phone=self.phone)
+                    verification_code = await code_future
+                    await self.client.sign_in(phone=self.phone, code=verification_code)
+                except Exception as e:
+                    print(f"Ошибка при вводе кода: {e}")
+                    raise
+
+            await self.client.send_message(self.tg_bot, "/start")
+            self.gui.silero_connected.set(True)
+
+            if self.tg_bot == "@silero_voice_bot":
+                await asyncio.sleep(0.35)
+                await self.client.send_message(self.tg_bot, "/speaker mita")
+                self.last_speaker_command = "/speaker mita"
+                await asyncio.sleep(0.35)
+                await self.client.send_message(self.tg_bot, "/mp3")
+                await asyncio.sleep(0.35)
+                await self.client.send_message(self.tg_bot, "/hd")
+                await asyncio.sleep(0.35)
+                await self.client.send_message(self.tg_bot, "/videonotes")
+            print("Включено все в ТГ для сообщений миты")
+        except Exception as e:
+            self.gui.silero_connected.set(False)
+            print(f"Ошибка авторизации: {e}")
+    
+    async def play_unread(self, message):
+        print(f"Воспроизведение: {message.id}")
+        print(f"Текст: {message.id}")
+        doc = message.media.document
+        # Проверяем MP3-файл
+        if "audio/mpeg" in doc.mime_type:
+            response = message
+
+        # Проверяем голосовое сообщение (OGG, voice)
+        if "audio/ogg" in doc.mime_type:
+            for attr in doc.attributes:
+                if isinstance(attr, DocumentAttributeAudio) and attr.voice:
+                    response = message
+                    break
+        
+        file_path = await self.client.download_media(response.media)
+                
+        new_file_path = f"{message.reply_to_msg_id}_{file_path}"
+        os.rename(file_path, new_file_path)
+        file_path = new_file_path
+
+        print(f"Файл загружен: {file_path}")
+        sound_absolute_path = os.path.abspath(file_path)
+        if self.gui.ConnectedToGame:
+            print("Подключен к игре, нужна конвертация")
+
+            # Генерируем путь для WAV-файла на основе имени исходного MP3
+            base_name = os.path.splitext(os.path.basename(file_path))[
+                0
+            ]  # Получаем имя файла без расширения
+            wav_path = os.path.join(
+                os.path.dirname(file_path), f"{base_name}.wav"
+            )  # Создаем новый путь
+
+            # Получаем абсолютный путь
+
+            absolute_wav_path = os.path.abspath(wav_path)
+            # Конвертируем MP3 в WAV
+            # await  AudioConverter.convert_mp3_to_wav(sound_absolute_path, absolute_wav_path)
+            await AudioConverter.convert_to_wav(
+                sound_absolute_path, absolute_wav_path
+            )
+            
             try:
-                message = await self.client.get_messages(chat_id, ids=reply_id)
-                return message
-            except:
-                return False  # False, если сообщение не найдено или произошла ошибка
+                print(f"Удаляю файл: {sound_absolute_path}")
+                os.remove(sound_absolute_path)
+                print(f"Файл {sound_absolute_path} удалён.")
+            except OSError as remove_error:
+                print(
+                    f"Ошибка при удалении файла {sound_absolute_path}: {remove_error}"
+                )
+
+            self.gui.patch_to_sound_file = absolute_wav_path
+            print(f"Файл wav загружен: {absolute_wav_path}")
+        else:
+            print(f"Отправлен воспроизводится: {sound_absolute_path}")
+            await self.handle_voice_file(file_path)
+        return
