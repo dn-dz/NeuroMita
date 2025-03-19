@@ -93,8 +93,9 @@ class Character:
         messages = []
 
         for part in self.fixed_prompts:
-            if part.active:
-                m = {"role": "system", "content": str(part)}
+            text = str(part).strip()
+            if part.active and text != "":
+                m = {"role": "system", "content": text}
                 messages.append(m)
 
         memory_message = {"role": "system", "content": self.memory_system.get_memories_formatted()}
@@ -113,11 +114,12 @@ class Character:
         print(f"Добавление плавающих")
         for part in self.float_prompts:
 
-            if part.active:
-                m = {"role": "system", "content": str(part)}
+            text = str(part).strip()
+            if part.active and text != "":
+                m = {"role": "system", "content": str(text)}
                 messages.append(m)
                 part.active = False
-                print(f"Добавляю плавающий промпт {part}")
+                print(f"Добавляю плавающий промпт {text}")
 
         return messages
 
@@ -517,6 +519,9 @@ class ShortHairMita(Character):
         Prompts.append(
             PromptPart(PromptType.FIXED_START, self.get_path("Context/mita_history.txt"), "mita_history", False))
 
+        #Prompts.append(
+         #   PromptPart(PromptType.FIXED_START, self.get_path("Context/world.txt"), "world"))
+
         Prompts.append(
             PromptPart(PromptType.FIXED_START, self.get_path("Structural/VariablesEffects.txt"), "variableEffects"))
 
@@ -610,6 +615,9 @@ class CappyMita(Character):
 
         Prompts.append(
             PromptPart(PromptType.FIXED_START, self.get_path("Context/mita_history.txt"), "mita_history"))
+
+        Prompts.append(
+            PromptPart(PromptType.FIXED_START, self.get_path("Context/world.txt"), "world"))
 
         Prompts.append(
             PromptPart(PromptType.FIXED_START, self.get_path("Structural/VariablesEffects.txt"), "variableEffects"))
@@ -822,6 +830,9 @@ class SleepyMita(Character):
 
 
 class GameMaster(Character):
+    """
+    Специальный служебный персонаж, отвечающий за ход диалога
+    """
     def __init__(self, name: str = "GameMaster", silero_command: str = "/speaker dryad", silero_turn_off_video=False):
         super().__init__(name, silero_command, silero_turn_off_video)
 
@@ -832,6 +843,7 @@ class GameMaster(Character):
         Prompts = []
 
         Prompts.append(PromptPart(PromptType.FIXED_START, self.get_path("Game_master.txt")))
+        Prompts.append(PromptPart(PromptType.FIXED_START, self.get_path("current_command.txt")))
 
         for prompt in Prompts:
             self.add_prompt_part(prompt)

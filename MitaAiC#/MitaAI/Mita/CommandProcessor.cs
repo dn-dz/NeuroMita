@@ -201,6 +201,15 @@ namespace MitaAI.Mita
                     mitaCore.GlassesObj(false);
                     break;
 
+
+                case "tojail":
+                    Jail(true);
+                    break;
+                case "fromjail":
+                    Jail(false);
+                    break;
+
+
                 // Дополнительные команды...
                 default:
                     HandleDefaultCommand(command);
@@ -273,13 +282,13 @@ namespace MitaAI.Mita
 
                     break;
 
-                case "LookAt":
+                case "lookat":
                     MitaCore.Instance.MitaLook.LookOnObject(GameObject.Find(secondCommand).transform);
                     break;
-                case "LookAtTurnTo":
+                case "lookaturnto":
                     MitaCore.Instance.MitaLook.LookOnObjectAndRotate(GameObject.Find(secondCommand).transform);
                     break;
-                case "TurnTo":
+                case "turnto":
                     MitaCore.Instance.MitaLook.RotateOnTarget(GameObject.Find(secondCommand).transform);
                     break;
 
@@ -315,12 +324,18 @@ namespace MitaAI.Mita
 
                     break;
                 #region GameMaster
-                case "SendAll":
+                case "sendall":
 
                     MelonLogger.Msg($"GameMaster Try {command} Send {secondCommand} To all");
                     MitaCore.Instance.sendInfoListenersFromGm(secondCommand);
                     break;
+                case "speaker":
 
+                    MelonLogger.Msg($"GameMaster choose speaker");
+                    Enum.TryParse<MitaCore.character>(secondCommand, true, out var characterToSend);
+                    CharacterControl.SetNextSpeaker(characterToSend);
+                    //MitaCore.Instance.sendSystemMessage(characterToSend);
+                    break;
                 #endregion
 
 
@@ -332,10 +347,10 @@ namespace MitaAI.Mita
         }
         private static void HandleThreePartCommand(string command, string secondCommand, string thrirdCommand)
         {
-            switch (command)
+            switch (command.ToLower())
             {
                 #region GameMaster
-                case "Send":
+                case "send":
 
                     MelonLogger.Msg($"GameMaster Try {command} Send {thrirdCommand} To {secondCommand}");
                     Enum.TryParse<MitaCore.character>(secondCommand, true, out var characterToSend);
@@ -390,6 +405,7 @@ namespace MitaAI.Mita
             }
         }
 
+        // Подсказка слева сверху
         public static string ProcesHint(string response)
         {
 
@@ -415,7 +431,7 @@ namespace MitaAI.Mita
         }
 
 
-        // TODO дать доброй мите
+        // TODO дать доброй мите в промпте
         public static void Jail(bool Enter)
         {
             if (Enter)

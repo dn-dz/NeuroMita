@@ -46,11 +46,11 @@ namespace MitaAI
             CharacterControl.gameMaster = this;
         }
 
-        int timingEach = 3;
+        public int timingEach = 3;
         int timingNow = 1;
         public bool isTimeToCorrect()
         {
-            bool isIt = timingNow == timingEach;
+            bool isIt = timingNow >= timingEach;
 
             if (isIt) timingNow = 1;
             else timingNow += 1;
@@ -71,13 +71,13 @@ namespace MitaAI
         }
 
         int timingEach = 3;
-        int tiningNow = 1;
+        int timingNow = 1;
         public bool isTimeToCorrect()
         {
-            bool isIt = tiningNow == timingEach;
+            bool isIt = timingNow == timingEach;
 
-            if (isIt) tiningNow = 0;
-            else tiningNow = 1;
+            if (isIt) timingNow = 0;
+            else timingNow = 1;
 
             return isIt;
 

@@ -38,7 +38,10 @@ https://github.com/VinerX/NeuroMita/releases - тут релизы, то ест�
       Галка gpt4free, ключи не требуются: 
       - модель gemini-1.5-flash
       - модель gpt-4o-mini
-
+      - модель gpt-4o
+      - модель gemini-2.0-flash
+      - модель deepseek-chat
+        
       Модели OpenRouter, ключи тут получаем https://openrouter.ai/settings/keys
       - ссылка https://openrouter.ai/api/v1 модель google/gemini-2.0-pro-exp-02-05:free (обычный режим)
       - ссылка https://openrouter.ai/api/v1 модель deepseek/deepseek-chat:free (обычный режим) - !!! Крайне рекомендуется использовать для Доброй Миты

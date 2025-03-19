@@ -181,25 +181,25 @@ class ChatGUI:
         else:
             print("Ошибка: Цикл событий asyncio не готов.")
 
-    async def run_send_and_receive(self, response, speaker_command):
+    async def run_send_and_receive(self, response, speaker_command,id):
         """Асинхронный метод для вызова send_and_receive."""
         print("Попытка получить фразу")
         self.waiting_answer = True
-        await self.bot_handler.send_and_receive(response, speaker_command)
+        await self.bot_handler.send_and_receive(response, speaker_command,id)
         self.waiting_answer = False
         print("Завершение получения фразы")
 
     def check_text_to_talk_or_send(self):
         """Периодическая проверка переменной self.textToTalk."""
         if self.textToTalk:  #and not self.ConnectedToGame:
-            print(f"Есть текст для отправки: {self.textToTalk}")
+            print(f"Есть текст для отправки: {self.textToTalk} id {self.id_sound}")
             # Вызываем метод для отправки текста, если переменная не пуста
             if self.loop and self.loop.is_running():
                 try:
                     if bool(self.settings.get("SILERO_USE")):
                         print("Цикл событий готов. Отправка текста.")
                         asyncio.run_coroutine_threadsafe(
-                            self.run_send_and_receive(self.textToTalk, self.textSpeaker),
+                            self.run_send_and_receive(self.textToTalk, self.textSpeaker,self.id_sound),
                             self.loop
                         )
                     self.textToTalk = ""  # Очищаем текст после отправки
@@ -284,6 +284,12 @@ class ChatGUI:
         )
 
         self.chat_window.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Добавляем стили
+        self.chat_window.tag_configure("Mita", foreground="hot pink", font=("Arial", 12, "bold"))
+        self.chat_window.tag_configure("Player", foreground="gold", font=("Arial", 12, "bold"))
+
+
         input_frame = tk.Frame(left_frame, bg="#2c2c2c")
         input_frame.pack(fill=tk.X, padx=10, pady=10)
 
@@ -361,7 +367,7 @@ class ChatGUI:
         self.setup_model_controls(settings_frame)
         self.setup_common_controls(settings_frame)
         self.setup_game_master_controls(settings_frame)
-
+        #self.setup_new_game_master_controls(settings_frame)
         # Передаем settings_frame как родителя
         self.setup_status_indicators(settings_frame)
 
@@ -381,17 +387,22 @@ class ChatGUI:
         self.setup_api_controls(settings_frame)
 
         #self.setup_advanced_controls(right_frame)
+        
+        #Сворачивание секций
+        for widget in settings_frame.winfo_children():
+            if isinstance(widget, CollapsibleSection):
+                widget.collapse()
 
         self.load_chat_history()
 
     def insert_message(self, role, content):
         if role == "user":
             # Вставляем имя пользователя с зеленым цветом, а текст — обычным
-            self.chat_window.insert(tk.END, "Вы: ", "user_name")
+            self.chat_window.insert(tk.END, "Вы: ", "Player")
             self.chat_window.insert(tk.END, f"{content}\n")
         elif role == "assistant":
             # Вставляем имя Миты с синим цветом, а текст — обычным
-            self.chat_window.insert(tk.END, f"{self.model.current_character.name}: ", "gpt_name")
+            self.chat_window.insert(tk.END, f"{self.model.current_character.name}: ", "Mita")
             self.chat_window.insert(tk.END, f"{content}\n\n")
 
     def setup_status_indicators(self, parent):
@@ -521,11 +532,12 @@ class ChatGUI:
         )
         clear_button.pack(side=tk.LEFT, padx=5)
 
-        save_history_button = tk.Button(
-            history_frame, text="Сохранить историю", command=self.model.save_chat_history,
-            bg="#8a2be2", fg="#ffffff"
-        )
-        save_history_button.pack(side=tk.LEFT, padx=10)
+        # TODO Вернуть
+        # save_history_button = tk.Button(
+        #     history_frame, text="Сохранить историю", command=self.model.save_chat_history,
+        #     bg="#8a2be2", fg="#ffffff"
+        # )
+        # save_history_button.pack(side=tk.LEFT, padx=10)
 
     def load_chat_history(self):
 
@@ -699,13 +711,28 @@ class ChatGUI:
         # Основные настройки
         common_config = [
             {'label': 'ГеймМастер включен', 'key': 'GM_ON', 'type': 'checkbutton',
-             'default_checkbutton': False, 'tooltip': 'Помогает вести диалоги'},
+             'default_checkbutton': False, 'tooltip': 'Помогает вести диалоги, в теории устраняя проблемы'},
             {'label': 'ГеймМастер зачитывается', 'key': 'GM_READ', 'type': 'checkbutton',
              'default_checkbutton': False},
             {'label': 'ГеймМастер озвучивает', 'key': 'GM_VOICE', 'type': 'checkbutton',
-             'default_checkbutton': False}
+             'default_checkbutton': False},
+            {'label': 'Встревать через', 'key': 'GM_REPEAT', 'type': 'entry',
+             'default': 2, 'tooltip': 'Через сколько фраз гейммастер вмешивается'},
+            {'label': 'Лимит речей нпс %', 'key': 'CC_Limit_mod', 'type': 'entry',
+             'default': 100, 'tooltip': 'Сколько от кол-ва персонажей может отклоняться повтор речей нпс'}
         ]
         self.create_settings_section(parent, "Настройки Мастера игры", common_config)
+
+    def setup_new_game_master_controls(self, parent):
+        # Основные настройки для новой секции
+        new_common_config = [
+            {'label': 'Новая настройка 1', 'key': 'NEW_SETTING_1', 'type': 'checkbutton',
+             'default_checkbutton': False, 'tooltip': 'Описание новой настройки 1'},
+            {'label': 'Новая настройка 2', 'key': 'NEW_SETTING_2', 'type': 'entry',
+             'default': 5, 'tooltip': 'Описание новой настройки 2'}
+        ]
+        self.create_settings_section(parent, "Новая секция", new_common_config)
+
 
     def validate_number(self, new_value):
         if not new_value.isdigit():  # Проверяем, что это число
@@ -752,8 +779,8 @@ class ChatGUI:
                         settings = {}
 
                 except (OSError, IOError) as e:
-                        decoded = base64.b64decode(encoded)
-                        settings = json.loads(decoded.decode("utf-8"))
+                    decoded = base64.b64decode(encoded)
+                    settings = json.loads(decoded.decode("utf-8"))
 
             # Обновляем настройки новыми значениями, если они не пустые
             if api_key := self.api_key_entry.get().strip():
@@ -899,10 +926,13 @@ class ChatGUI:
 
     def insertDialog(self, input_text="", response=""):
         if input_text != "":
-            self.chat_window.insert(tk.END, "Вы: ", "user_name")
+            self.chat_window.insert(tk.END, "Вы: ", "Player")
             self.chat_window.insert(tk.END, f"{input_text}\n")
         if response != "":
-            self.chat_window.insert(tk.END, "Мита: ", "gpt_name")
+
+            MitaName = self.model.current_character.name
+
+            self.chat_window.insert(tk.END, f"{MitaName}: ", "Mita")
             self.chat_window.insert(tk.END, f"{response}\n\n")
 
     def send_message(self, system_input=""):
@@ -914,15 +944,16 @@ class ChatGUI:
             self.insert_message("user", user_input)
             self.user_entry.delete("1.0", "end")
 
-        response = self.model.generate_response(user_input, system_input)
+        # Запускаем асинхронную задачу для генерации ответа
+        if self.loop and self.loop.is_running():
+            asyncio.run_coroutine_threadsafe(self.async_send_message(user_input, system_input), self.loop)
 
+    async def async_send_message(self, user_input, system_input=""):
+        response = await self.loop.run_in_executor(None, lambda: self.model.generate_response(user_input, system_input))
         self.insert_message("assistant", response)
-        self.user_entry.delete("1.0", "end")
         self.updateAll()
-        # Отправка сообщения на сервер
         if self.server:
             try:
-                # Отправляем сообщение клиенту через сервер
                 if self.server.client_socket:
                     self.server.send_message_to_server(response)
                     print("Сообщение отправлено на сервер (связь с игрой есть)")
