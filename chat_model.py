@@ -118,7 +118,7 @@ class ChatModel:
         self.mila_character = MilaMita("Mila", "/speaker mila", True)
         self.sleepy_character = SleepyMita("Sleepy", "/speaker dream", True)
         self.cart_divan = DivanCartridge("Cart_divan", "/speaker engineer", True)
-        self.creepy_character = CreepyMita("Creepy", "/speaker ghost", True) #Спикер на рандом поставил
+        self.creepy_character = CreepyMita("Creepy", "/speaker ghost", True)  #Спикер на рандом поставил
         self.GameMaster = GameMaster()  # Спикер на рандом поставил
 
         # Словарь для сопоставления имен персонажей с их объектами
@@ -209,11 +209,15 @@ class ChatModel:
             response = self.current_character.process_response(response)
 
             print(f"До фразы {response}")
-            self.gui.textToTalk = self.process_text_to_voice(response)
-            self.gui.textSpeaker = self.current_character.silero_command
-            self.gui.silero_turn_off_video = self.current_character.silero_turn_off_video
-            print("self.gui.textToTalk: " + self.gui.textToTalk)
-            print("self.gui.textSpeaker: " + self.gui.textSpeaker)
+
+            if self.current_character == self.GameMaster and not bool(self.gui.settings.get("GM_VOICE")):
+                pass
+            else:
+                self.gui.textToTalk = self.process_text_to_voice(response)
+                self.gui.textSpeaker = self.current_character.silero_command
+                self.gui.silero_turn_off_video = self.current_character.silero_turn_off_video
+                print("self.gui.textToTalk: " + self.gui.textToTalk)
+                print("self.gui.textSpeaker: " + self.gui.textSpeaker)
 
             self.current_character.safe_history(messages, timed_system_message)
 
@@ -271,7 +275,7 @@ class ChatModel:
         combined_messages = character.prepare_fixed_messages()
 
         # Добавляем timed_system_message, если это словарь
-        if isinstance(timed_system_message, dict):
+        if isinstance(timed_system_message, dict) and timed_system_message["content"] != "":
             combined_messages.append(timed_system_message)
             print("timed_system_message успешно добавлено.")
 
@@ -326,7 +330,7 @@ class ChatModel:
 
                 if response:
                     response = self._clean_response(response)
-                    logger.info(f"Успешный ответ:\n{response}")
+                    #logger.info(f"Успешный ответ:\n{response}")
                     return response, True
 
             except Exception as e:
@@ -419,7 +423,6 @@ class ChatModel:
         except Exception as e:
             logger.error("Что-то не так при генерации OpenAI", str(e))
             return None
-
 
     def _save_and_calculate_cost(self, combined_messages):
         save_combined_messages(combined_messages)

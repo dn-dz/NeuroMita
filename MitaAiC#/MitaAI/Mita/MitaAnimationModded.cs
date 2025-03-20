@@ -92,9 +92,12 @@ namespace MitaAI.Mita
 
                 MelonLogger.Msg("b!");
                 //setIdleWalk("Mita Walk_1");
-                
-                animator.Rebind();
-                animator.Update(0);
+
+                if (changeAnimation){
+                    animator.Rebind();
+                    animator.Update(0);
+                }
+               
 
                 
             }

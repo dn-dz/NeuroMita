@@ -5,7 +5,7 @@ import time
 import random
 import pygame
 import asyncio
-import emoji
+#import emoji
 from telethon.tl.types import MessageMediaDocument, DocumentAttributeAudio
 
 import tkinter as tk
@@ -121,7 +121,7 @@ class TelegramBotHandler:
         except Exception as e:
             print(f"Ошибка при воспроизведении файла: {e}")
 
-    async def send_and_receive(self, input_message, speaker_command):
+    async def send_and_receive(self, input_message, speaker_command,message_id):
         """Отправляет сообщение боту и обрабатывает ответ."""
         global message_count
 
@@ -130,7 +130,9 @@ class TelegramBotHandler:
 
         #При компиляции нужно добавить в строку компилятора --add-data "%USERPROFILE%\AppData\Local\Programs\Python\Python313\Lib\site-packages\emoji\unicode_codes\emoji.json;emoji\unicode_codes"
         #Удаляем эмодзи из озвучки:
-        input_message = emoji.replace_emoji(input_message)  # Заменяет все эмодзи на пустую строку
+
+        #TODO ВЕРНУТь
+        #input_message = emoji.replace_emoji(input_message)  # Заменяет все эмодзи на пустую строку
 
         if self.last_speaker_command != speaker_command:
             await self.client.send_message(self.tg_bot, speaker_command)
@@ -140,7 +142,7 @@ class TelegramBotHandler:
             if self.gui.silero_turn_off_video:
                 await self.client.send_message(self.tg_bot, "/videonotes")
 
-                await asyncio.sleep(0.45)
+                await asyncio.sleep(0.65)
 
                 # Получаем последнее сообщение от бота
                 messages = await self.client.get_messages(self.tg_bot, limit=1)
@@ -170,7 +172,7 @@ class TelegramBotHandler:
         print("Ожидание ответа от бота...")
         response = None
         attempts = 0
-        attempts_per_second = 2
+        attempts_per_second = 3
 
         attempts_max = self.silero_time_limit * attempts_per_second
 
@@ -242,6 +244,7 @@ class TelegramBotHandler:
                     # .BnmRvcModel.process(absolute_wav_path, absolute_wav_path+"_RVC_.wav")
 
                     self.gui.patch_to_sound_file = absolute_wav_path
+                    self.gui.id_sound = message_id
                     print(f"Файл wav загружен: {absolute_wav_path}")
                 else:
                     print(f"Отправлен воспроизводится: {sound_absolute_path}")

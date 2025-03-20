@@ -1,7 +1,8 @@
-﻿using MelonLoader;
+using MelonLoader;
 using Il2Cpp;
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections; // Добавлено для IEnumerator
 
 namespace MitaAI
 {
@@ -22,6 +23,12 @@ namespace MitaAI
         private Animator animator;
         private MitaCore.character characterType; // Тип персонажа (Creepy, Sleepy и т.д.)
 
+        // Состояние персонажа для охоты
+        private enum CharacterState { normal, hunt }
+        private CharacterState currentState = CharacterState.normal;
+
+        private GameObject creepyKnife; //не рабочее, нужно найти настоящий gameobject
+
         private LogicCharacter() { } //пока-что нечего
 
         public void Initialize(GameObject character, MitaCore.character type)
@@ -31,6 +38,19 @@ namespace MitaAI
             characterType = type;
             AdjustCharacterSettings(); // Настройка параметров в зависимости от типа
             isInitialized = true;
+            // Инициализация ножа для Creepy
+            if (characterType == MitaCore.character.Creepy)
+            {
+                Transform knifeTransform = characterObject.transform.Find("Knife");
+                if (knifeTransform != null)
+                {
+                    creepyKnife = knifeTransform.gameObject;
+                }
+                else
+                {
+                    MelonLogger.Msg("Knife not found for Creepy during initialization");
+                }
+            }
         }
 
         private void SetCharacterObject(UnityEngine.GameObject character)
@@ -105,6 +125,137 @@ namespace MitaAI
             if (currentAnim.Contains("Fall") || currentAnim.Contains("Idle"))
             {
                 // Падение обнаружено
+            }
+        }
+
+        // Начало охоты для Creepy
+        public void BeginHunt()
+        {
+            if (characterType != MitaCore.character.Creepy) return;
+
+            try
+            {
+                MelonLogger.Msg("BeginHunt for Creepy");
+                if (creepyKnife != null)
+                {
+                    creepyKnife.SetActive(true);
+                }
+                else
+                {
+                    MelonLogger.Msg("Creepy knife is null in BeginHunt");
+                }
+
+                currentState = CharacterState.hunt;
+                MelonCoroutines.Start(Hunting());
+
+                // Отключаем возможность ходить через NavMeshAgent (аналог ActivationCanWalk(false))
+                if (navMeshAgent != null)
+                {
+                    navMeshAgent.enabled = false;
+                }
+
+                // Управление анимациями через Animator напрямую
+                if (animator != null)
+                {
+                    animator.Play("Creepy TakeKnife_0"); // Заменить на актуальное имя анимации
+                    animator.SetBool("IsWalkingWithKnife", true); // Пример, заменить на реальный параметр
+                }
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error("BeginHunt for Creepy: " + ex);
+            }
+        }
+
+        // Завершение охоты для Creepy
+        public void EndHunt()
+        {
+            if (characterType != MitaCore.character.Creepy) return;
+
+            try
+            {
+                if (animator != null)
+                {
+                    animator.SetBool("IsWalkingWithKnife", false); // Сброс параметра анимации
+                    animator.Play("Creepy Walk_1"); // Заменить на актуальное имя анимации
+                }
+
+                if (creepyKnife != null)
+                {
+                    creepyKnife.SetActive(false);
+                }
+
+                // Восстановление стандартного стиля движения
+                MitaCore.movementStyle = MitaCore.MovementStyles.walkNear;
+                if (navMeshAgent != null)
+                {
+                    navMeshAgent.enabled = true;
+                    navMeshAgent.ResetPath();
+                }
+
+                currentState = CharacterState.normal;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error("EndHunt for Creepy: " + ex);
+            }
+        }
+
+        // Корутина преследования для Creepy
+        private IEnumerator Hunting()
+        {
+            if (characterType != MitaCore.character.Creepy) yield break;
+
+            float startTime = Time.unscaledTime;
+            float lastMessageTime = -45f;
+            yield return new WaitForSeconds(1f);
+
+            // Включаем NavMeshAgent обратно для преследования
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.enabled = true;
+            }
+
+            while (currentState == CharacterState.hunt)
+            {
+                if (navMeshAgent == null || MitaCore.Instance.playerPersonObject == null) yield break;
+
+                float distanceToPlayer = Vector3.Distance(
+                    characterObject.transform.position,
+                    MitaCore.Instance.playerPersonObject.transform.position
+                );
+
+                if (distanceToPlayer > 1f)
+                {
+                    navMeshAgent.SetDestination(MitaCore.Instance.playerPersonObject.transform.position);
+                }
+                else
+                {
+                    try
+                    {
+                        MelonCoroutines.Start(MitaCore.Instance.ActivateAndDisableKiller(3));
+                        EndHunt(); // Завершаем охоту после убийства
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Error("Hunting error for Creepy: " + ex);
+                    }
+                    yield break;
+                }
+
+                float elapsedTime = Time.unscaledTime - startTime;
+                if (elapsedTime - lastMessageTime >= 45f)
+                {
+                    string message = $"Игрок жив уже {elapsedTime.ToString("F2")} секунд. Скажи что-нибудь короткое. ";
+                    if (Mathf.FloorToInt(elapsedTime) % 60 == 0)
+                    {
+                        message += "Может быть, пора усложнять игру... (Менять скорости или применять эффекты)";
+                    }
+                    MitaCore.Instance.sendSystemMessage(message);
+                    lastMessageTime = elapsedTime;
+                }
+
+                yield return new WaitForSeconds(0.5f);
             }
         }
 

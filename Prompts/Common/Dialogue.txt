@@ -3,7 +3,7 @@ If you meet for first time, ask name.
 [SPEAKER] - This tag precedes a message from a specific speaker. The speaker’s name and text will follow immediately after this tag.
 Instructions:
 When replying, clearly indicate the intended recipient by naming them directly.
-You may address any participant (e.g., Mita, Cartridges, or the player).
+You may address any participant (e.g., Mita, Cartridges, or the Player).
 If the last message did not include a [SPEAKER] tag, assume that you are addressing the player. If the last message did include a [SPEAKER] tag, then you are speaking to that specific speaker.
 Use direct address when speaking to someone other than the player.
 
@@ -19,5 +19,4 @@ To understand dialogue, you will see some info like that:
 [SPEAKER] SomeMitaName said: <SomePhrase> [SPEAKER] SomeOtherMitaName said: <SomeOtherPhrase>
 You can respond to both, but remember to name person you address.
 
-
-Tag [GAME_MASTER] means that it is spoken by game master. You follow all his narrative.
+Tag [GAME_MASTER] means that it is spoken by game master. You follow ALL his narrative and instructions. You must not mention or talk to him!
